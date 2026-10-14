@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
+  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -20,6 +22,7 @@ function Login() {
 
       // Lưu token vào bộ nhớ trình duyệt để dùng cho các chức năng sau này
       localStorage.setItem("token", response.data.token);
+      navigate("/dashboard");
 
       // Tạm thời alert ra thông báo để dễ nhận biết
       alert("Đăng nhập thành công! Chào " + response.data.user.fullName);

@@ -3,11 +3,12 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const db = require("./config/db");
+const roomsRouter = require("./routes/rooms");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
+app.use("/api/rooms", roomsRouter);
 // Khóa bí mật để tạo Token (Trong thực tế nên lưu vào file .env)
 const SECRET_KEY = "khoa_bi_mat_cua_he_thong_nha_tro";
 
@@ -63,10 +64,35 @@ app.post("/api/login", async (req, res) => {
     res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 });
+// API lấy danh sách loại phòng
+app.get("/api/room-types", async (req, res) => {
+  try {
+    const [types] = await db.query(`
+      SELECT
+        room_type_id,
+        type_code,
+        type_name,
+        description
+      FROM room_types
+      ORDER BY room_type_id ASC
+    `);
 
-// -----------------------------------------------------
+    res.status(200).json({
+      message: "Lấy danh sách loại phòng thành công",
+      total: types.length,
+      data: types,
+    });
+  } catch (error) {
+    console.error("Lỗi lấy danh sách loại phòng:", error);
+
+    res.status(500).json({
+      message: "Không thể lấy danh sách loại phòng",
+    });
+  }
+});
+
 // Khởi chạy server
-// -----------------------------------------------------
+
 app.listen(3000, () => {
   console.log("Server đang chạy tại: http://localhost:3000");
 });
