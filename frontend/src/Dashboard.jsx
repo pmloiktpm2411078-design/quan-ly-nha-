@@ -79,6 +79,7 @@ function Dashboard() {
       title: "Quản lý người thuê",
       description: "Lưu trữ thông tin và quản lý người thuê.",
       icon: "👥",
+      action: () => navigate("/tenants"),
     },
     {
       title: "Quản lý hợp đồng",

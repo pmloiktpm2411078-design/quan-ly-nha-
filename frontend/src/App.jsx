@@ -5,6 +5,7 @@ import Rooms from "./Rooms";
 import AddRoom from "./AddRoom";
 import EditRoom from "./EditRoom";
 import RoomDetail from "./RoomDetail";
+import Tenants from "./tenants/Tenants";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
         <Route path="/rooms/edit/:id" element={<EditRoom />} />
         <Route path="/rooms/:id" element={<RoomDetail />} />
+        <Route path="/tenants" element={<Tenants />} />
       </Routes>
     </BrowserRouter>
   );
