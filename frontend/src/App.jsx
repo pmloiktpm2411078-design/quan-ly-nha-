@@ -1,11 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./Login";
-import Dashboard from "./Dashboard";
+import Login from "./pages/auth/Login";
+import Dashboard from "./pages/dashboard/Dashboard";
 import Rooms from "./Rooms";
 import AddRoom from "./AddRoom";
 import EditRoom from "./EditRoom";
 import RoomDetail from "./RoomDetail";
-import Tenants from "./tenants/Tenants";
+import Tenants from "./pages/Tenants";
 
 function App() {
   return (
