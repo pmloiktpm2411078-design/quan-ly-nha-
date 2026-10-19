@@ -4,11 +4,14 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const db = require("./config/db");
 const roomsRouter = require("./routes/rooms");
-
+const tenantsRouter = require("./routes/tenants");
 const app = express();
+const holdsRouter = require("./routes/holds");
 app.use(cors());
 app.use(express.json());
 app.use("/api/rooms", roomsRouter);
+app.use("/api/tenants", tenantsRouter);
+app.use("/api/holds", holdsRouter);
 // Khóa bí mật để tạo Token (Trong thực tế nên lưu vào file .env)
 const SECRET_KEY = "khoa_bi_mat_cua_he_thong_nha_tro";
 
