@@ -2,13 +2,17 @@ const express = require("express");
 const router = express.Router();
 
 const db = require("../config/db");
-const authMiddleware = require("./authMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
+const { ROLE_IDS, authorizeRoles } = require("../middleware/authorizeRoles");
+const writeAuditLog = require("../services/auditLog");
+
+const holdManagementRoles = authorizeRoles(ROLE_IDS.MANAGER, ROLE_IDS.STAFF);
 
 // =====================================================
 // GET /api/holds
 // Xem danh sách giữ phòng
 // =====================================================
-router.get("/", authMiddleware, async (req, res) => {
+router.get("/", authMiddleware, holdManagementRoles, async (req, res) => {
   try {
     const sql = `
       SELECT
@@ -56,7 +60,7 @@ router.get("/", authMiddleware, async (req, res) => {
 // POST /api/holds
 // Tạo lượt giữ phòng và ghi nhận tiền cọc
 // =====================================================
-router.post("/", authMiddleware, async (req, res) => {
+router.post("/", authMiddleware, holdManagementRoles, async (req, res) => {
   const roomId = Number(req.body.room_id);
   const tenantId = Number(req.body.tenant_id);
   const amount = Number(req.body.amount);
@@ -199,6 +203,22 @@ router.post("/", authMiddleware, async (req, res) => {
        WHERE room_id = ?`,
       [roomId],
     );
+
+    await writeAuditLog(connection, req, {
+      userId: req.user.userId,
+      actionType: "CREATE_HOLD",
+      tableName: "reservation_holds",
+      recordId: holdId,
+      newData: {
+        room_id: roomId,
+        tenant_id: tenantId,
+        deposit_amount: amount,
+        expires_at: expiresAt,
+        status: "ACTIVE",
+        deposit_status: "HELD",
+      },
+      description: "Tạo lượt giữ phòng và ghi nhận tiền cọc",
+    });
 
     await connection.commit();
 

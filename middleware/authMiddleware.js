@@ -1,7 +1,5 @@
 const jwt = require("jsonwebtoken");
-
-// Phải sử dụng cùng khóa bí mật với server.js
-const SECRET_KEY = "khoa_bi_mat_cua_he_thong_nha_tro";
+const { jwtSecret } = require("../config/env");
 
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -15,7 +13,7 @@ function authMiddleware(req, res, next) {
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, SECRET_KEY);
+    const decoded = jwt.verify(token, jwtSecret);
 
     req.user = {
       userId: decoded.userId,

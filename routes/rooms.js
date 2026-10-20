@@ -2,10 +2,14 @@ const express = require("express");
 const router = express.Router();
 
 const db = require("../config/db");
-const authMiddleware = require("./authMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
+const { ROLE_IDS, authorizeRoles } = require("../middleware/authorizeRoles");
+const writeAuditLog = require("../services/auditLog");
+
+const roomManagementRoles = authorizeRoles(ROLE_IDS.MANAGER, ROLE_IDS.STAFF);
 
 // UC-ROOM-01: Xem danh sách phòng
-router.get("/", authMiddleware, async (req, res) => {
+router.get("/", authMiddleware, roomManagementRoles, async (req, res) => {
   try {
     const sql = `
       SELECT
@@ -44,7 +48,7 @@ router.get("/", authMiddleware, async (req, res) => {
 });
 // UC-ROOM-02: Thêm phòng mới
 // UC-ROOM-03: Lấy thông tin chi tiết một phòng
-router.get("/:id", authMiddleware, async (req, res) => {
+router.get("/:id", authMiddleware, roomManagementRoles, async (req, res) => {
   try {
     const roomId = Number(req.params.id);
 
@@ -91,7 +95,7 @@ router.get("/:id", authMiddleware, async (req, res) => {
     });
   }
 });
-router.post("/", authMiddleware, async (req, res) => {
+router.post("/", authMiddleware, roomManagementRoles, async (req, res) => {
   try {
     const {
       room_code,
@@ -181,7 +185,12 @@ router.post("/", authMiddleware, async (req, res) => {
     }
 
     // 5. Lưu phòng mới vào database
-    const [result] = await db.query(
+    const connection = await db.getConnection();
+    let result;
+
+    try {
+      await connection.beginTransaction();
+      [result] = await connection.query(
       `INSERT INTO rooms
        (
          room_code,
@@ -200,8 +209,33 @@ router.post("/", authMiddleware, async (req, res) => {
         area,
         rent,
         description ? String(description).trim() : null,
-      ],
-    );
+        ],
+      );
+
+      await writeAuditLog(connection, req, {
+        userId: req.user.userId,
+        actionType: "CREATE",
+        tableName: "rooms",
+        recordId: result.insertId,
+        newData: {
+          room_code: code,
+          room_number: number,
+          room_type_id: typeId,
+          area_m2: area,
+          listed_rent: rent,
+          status: "AVAILABLE",
+          description: description ? String(description).trim() : null,
+        },
+        description: "Tạo phòng mới",
+      });
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
 
     return res.status(201).json({
       message: "Thêm phòng thành công!",
@@ -217,7 +251,7 @@ router.post("/", authMiddleware, async (req, res) => {
 });
 
 // UC-ROOM-03: Cập nhật thông tin phòng
-router.put("/:id", authMiddleware, async (req, res) => {
+router.put("/:id", authMiddleware, roomManagementRoles, async (req, res) => {
   try {
     const roomId = Number(req.params.id);
 
@@ -287,7 +321,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
 
     // 3. Kiểm tra phòng có tồn tại không
     const [currentRooms] = await db.query(
-      "SELECT room_id FROM rooms WHERE room_id = ?",
+      "SELECT * FROM rooms WHERE room_id = ?",
       [roomId],
     );
 
@@ -327,8 +361,12 @@ router.put("/:id", authMiddleware, async (req, res) => {
 
     // 6. Cập nhật thông tin phòng
     // Giữ nguyên trạng thái phòng hiện tại
-    await db.query(
-      `UPDATE rooms
+    const connection = await db.getConnection();
+
+    try {
+      await connection.beginTransaction();
+      await connection.query(
+        `UPDATE rooms
        SET room_code = ?,
            room_number = ?,
            room_type_id = ?,
@@ -344,8 +382,34 @@ router.put("/:id", authMiddleware, async (req, res) => {
         rent,
         description ? String(description).trim() : null,
         roomId,
-      ],
-    );
+        ],
+      );
+
+      await writeAuditLog(connection, req, {
+        userId: req.user.userId,
+        actionType: "UPDATE",
+        tableName: "rooms",
+        recordId: roomId,
+        oldData: currentRooms[0],
+        newData: {
+          ...currentRooms[0],
+          room_code: code,
+          room_number: number,
+          room_type_id: typeId,
+          area_m2: area,
+          listed_rent: rent,
+          description: description ? String(description).trim() : null,
+        },
+        description: "Cập nhật thông tin phòng",
+      });
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
 
     return res.status(200).json({
       message: "Cập nhật thông tin phòng thành công!",

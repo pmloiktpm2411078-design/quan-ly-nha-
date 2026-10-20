@@ -1,0 +1,200 @@
+/* Login.css - Giao diện hoàn chỉnh cho trang Đăng nhập */
+.login-page-wrapper {
+  background-color: #f4f6f9;
+  min-height: 100vh;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+/* Phần tiêu đề và đường dẫn điều hướng (Breadcrumb) phía trên */
+.login-header-section {
+  max-width: 1000px;
+  margin: 0 auto 20px auto;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 15px;
+}
+
+.login-main-title {
+  color: #1a365d;
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.breadcrumb-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.breadcrumb-btn {
+  background-color: #2b6cb0;
+  color: white;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.breadcrumb-btn.active {
+  background-color: #3182ce;
+}
+
+/* Khung chứa form đăng nhập chính ở giữa (Đã sửa để không bị lệch/tràn màn hình) */
+.login-box-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh;
+  margin-top: 10px;
+}
+
+.login-card-box {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border: 1px solid #dcdcdc;
+  padding: 30px 40px;
+  box-sizing: border-box;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Avatar icon tròn phía trên form */
+.avatar-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 25px;
+}
+
+.avatar-circle {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #00b4db, #0083b0);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.avatar-circle svg {
+  width: 40px;
+  height: 40px;
+  fill: white;
+}
+
+/* Các trường input */
+.input-field-group {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.custom-login-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #cbd5e0;
+  border-radius: 2px;
+  outline: none;
+  box-sizing: border-box;
+  background-color: #fff;
+  color: #000000 !important;
+}
+
+.custom-login-input:focus {
+  border-color: #3182ce;
+  box-shadow: 0 0 0 1px #3182ce;
+}
+
+/* Khung chứa ô mật khẩu và nút bấm con mắt */
+.password-field-wrapper {
+  position: relative;
+}
+
+/* Nút icon ẩn/hiện mật khẩu nằm bên phải ô input */
+.toggle-password-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #718096;
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+
+.toggle-password-btn:hover {
+  color: #2b6cb0;
+}
+
+/* Nút đăng nhập */
+.custom-submit-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #fff;
+  background-color: #3182ce;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  margin-top: 5px;
+  transition: background-color 0.2s;
+}
+
+.custom-submit-btn:hover {
+  background-color: #2b6cb0;
+}
+
+/* Các liên kết phụ (Ghi nhớ, quên mật khẩu, đăng ký) */
+.login-extra-links {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  margin-top: 15px;
+  color: #4a5568;
+}
+
+.remember-me-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.forgot-password-link {
+  color: #2d3748;
+  text-decoration: none;
+}
+
+.forgot-password-link:hover {
+  text-decoration: underline;
+}
+
+.register-account-row {
+  margin-top: 25px;
+  font-size: 13px;
+}
+
+.register-account-row a {
+  color: #2d3748;
+  text-decoration: none;
+}
+
+.register-account-row a:hover {
+  text-decoration: underline;
+}
+
+.error-message-text {
+  color: #e53e3e;
+  margin-top: 15px;
+  font-size: 13px;
+}

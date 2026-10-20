@@ -1,13 +1,18 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
-const authMiddleware = require("./authMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
+const { ROLE_IDS, authorizeRoles } = require("../middleware/authorizeRoles");
+const writeAuditLog = require("../services/auditLog");
+
+const tenantReadRoles = authorizeRoles(ROLE_IDS.MANAGER, ROLE_IDS.STAFF);
+const tenantWriteRole = authorizeRoles(ROLE_IDS.STAFF);
 
 // ============================================
 // UC-TENANT-01: LẤY DANH SÁCH NGƯỜI THUÊ
 // API: GET /api/tenants
 // ============================================
-router.get("/", authMiddleware, async (req, res) => {
+router.get("/", authMiddleware, tenantReadRoles, async (req, res) => {
   try {
     const keyword = String(req.query.keyword || "").trim();
 
@@ -56,7 +61,7 @@ router.get("/", authMiddleware, async (req, res) => {
 // UC-TENANT-02: XEM CHI TIẾT NGƯỜI THUÊ
 // API: GET /api/tenants/:id
 // ============================================
-router.get("/:id", authMiddleware, async (req, res) => {
+router.get("/:id", authMiddleware, tenantReadRoles, async (req, res) => {
   try {
     const tenantId = Number(req.params.id);
 
@@ -105,7 +110,7 @@ router.get("/:id", authMiddleware, async (req, res) => {
 // UC-TENANT-03: THÊM NGƯỜI THUÊ
 // API: POST /api/tenants
 // ============================================
-router.post("/", authMiddleware, async (req, res) => {
+router.post("/", authMiddleware, tenantWriteRole, async (req, res) => {
   try {
     const {
       full_name,
@@ -191,7 +196,12 @@ router.post("/", authMiddleware, async (req, res) => {
       }
     }
 
-    const [result] = await db.query(
+    const connection = await db.getConnection();
+    let result;
+
+    try {
+      await connection.beginTransaction();
+      [result] = await connection.query(
       `INSERT INTO tenants (
         full_name,
         date_of_birth,
@@ -207,8 +217,32 @@ router.post("/", authMiddleware, async (req, res) => {
         phoneNumber || null,
         address ? String(address).trim() : null,
         contact_info ? String(contact_info).trim() : null,
-      ],
-    );
+        ],
+      );
+
+      await writeAuditLog(connection, req, {
+        userId: req.user.userId,
+        actionType: "CREATE",
+        tableName: "tenants",
+        recordId: result.insertId,
+        newData: {
+          full_name: fullName,
+          date_of_birth: dateOfBirth,
+          identity_number: identityNumber || null,
+          phone: phoneNumber || null,
+          address: address ? String(address).trim() : null,
+          contact_info: contact_info ? String(contact_info).trim() : null,
+        },
+        description: "Tạo hồ sơ người thuê",
+      });
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
 
     return res.status(201).json({
       message: "Thêm người thuê thành công.",
@@ -227,7 +261,7 @@ router.post("/", authMiddleware, async (req, res) => {
 // UC-TENANT-04: CẬP NHẬT NGƯỜI THUÊ
 // API: PUT /api/tenants/:id
 // ============================================
-router.put("/:id", authMiddleware, async (req, res) => {
+router.put("/:id", authMiddleware, tenantWriteRole, async (req, res) => {
   try {
     const tenantId = Number(req.params.id);
 
@@ -255,7 +289,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
     }
 
     const [currentTenant] = await db.query(
-      "SELECT tenant_id FROM tenants WHERE tenant_id = ?",
+      "SELECT * FROM tenants WHERE tenant_id = ?",
       [tenantId],
     );
 
@@ -329,8 +363,12 @@ router.put("/:id", authMiddleware, async (req, res) => {
       }
     }
 
-    await db.query(
-      `UPDATE tenants
+    const connection = await db.getConnection();
+
+    try {
+      await connection.beginTransaction();
+      await connection.query(
+        `UPDATE tenants
        SET full_name = ?,
            date_of_birth = ?,
            identity_number = ?,
@@ -346,8 +384,34 @@ router.put("/:id", authMiddleware, async (req, res) => {
         address ? String(address).trim() : null,
         contact_info ? String(contact_info).trim() : null,
         tenantId,
-      ],
-    );
+        ],
+      );
+
+      await writeAuditLog(connection, req, {
+        userId: req.user.userId,
+        actionType: "UPDATE",
+        tableName: "tenants",
+        recordId: tenantId,
+        oldData: currentTenant[0],
+        newData: {
+          ...currentTenant[0],
+          full_name: fullName,
+          date_of_birth: dateOfBirth,
+          identity_number: identityNumber || null,
+          phone: phoneNumber || null,
+          address: address ? String(address).trim() : null,
+          contact_info: contact_info ? String(contact_info).trim() : null,
+        },
+        description: "Cập nhật hồ sơ người thuê",
+      });
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
 
     return res.status(200).json({
       message: "Cập nhật người thuê thành công.",

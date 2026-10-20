@@ -1,98 +1,23 @@
 const express = require("express");
 const cors = require("cors");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const db = require("./config/db");
 const roomsRouter = require("./routes/rooms");
 const tenantsRouter = require("./routes/tenants");
-const app = express();
 const holdsRouter = require("./routes/holds");
+const authRouter = require("./routes/auth");
+const roomTypesRouter = require("./routes/roomTypes");
+const auditLogsRouter = require("./routes/auditLogs");
+const roomTypePricesRouter = require("./routes/roomTypePrices");
+const app = express();
+
 app.use(cors());
 app.use(express.json());
+app.use("/api", authRouter);
+app.use("/api/room-types", roomTypesRouter);
 app.use("/api/rooms", roomsRouter);
 app.use("/api/tenants", tenantsRouter);
 app.use("/api/holds", holdsRouter);
-// Khóa bí mật để tạo Token (Trong thực tế nên lưu vào file .env)
-const SECRET_KEY = "khoa_bi_mat_cua_he_thong_nha_tro";
-
-// -----------------------------------------------------
-// API 1: ĐĂNG NHẬP (Lấy Token)
-// -----------------------------------------------------
-app.post("/api/login", async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    // 1. Tìm user trong database
-    const [users] = await db.query("SELECT * FROM users WHERE username = ?", [
-      username,
-    ]);
-    if (users.length === 0) {
-      return res
-        .status(401)
-        .json({ message: "Sai tên đăng nhập hoặc mật khẩu!" });
-    }
-
-    const user = users[0];
-
-    // 2. Kiểm tra tài khoản có bị khóa không (UC-USER-02)
-    if (user.status === "LOCKED") {
-      return res.status(403).json({ message: "Tài khoản của bạn đã bị khóa!" });
-    }
-
-    // 3. So sánh mật khẩu (password người dùng nhập vs password_hash trong DB)
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-    if (!isPasswordValid) {
-      return res
-        .status(401)
-        .json({ message: "Sai tên đăng nhập hoặc mật khẩu!" });
-    }
-
-    // 4. Tạo JWT Token chứa thông tin user và role_id
-    const token = jwt.sign(
-      { userId: user.user_id, roleId: user.role_id, username: user.username },
-      SECRET_KEY,
-      { expiresIn: "8h" }, // Token có hạn 8 tiếng
-    );
-
-    res.json({
-      message: "Đăng nhập thành công!",
-      token: token,
-      user: {
-        fullName: user.full_name,
-        roleId: user.role_id,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Lỗi hệ thống!" });
-  }
-});
-// API lấy danh sách loại phòng
-app.get("/api/room-types", async (req, res) => {
-  try {
-    const [types] = await db.query(`
-      SELECT
-        room_type_id,
-        type_code,
-        type_name,
-        description
-      FROM room_types
-      ORDER BY room_type_id ASC
-    `);
-
-    res.status(200).json({
-      message: "Lấy danh sách loại phòng thành công",
-      total: types.length,
-      data: types,
-    });
-  } catch (error) {
-    console.error("Lỗi lấy danh sách loại phòng:", error);
-
-    res.status(500).json({
-      message: "Không thể lấy danh sách loại phòng",
-    });
-  }
-});
+app.use("/api/audit-logs", auditLogsRouter);
+app.use("/api/room-type-prices", roomTypePricesRouter);
 
 // Khởi chạy server
 
